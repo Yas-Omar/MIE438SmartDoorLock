@@ -1,13 +1,15 @@
+
 //#include "esp32_camera.ino"  --> Used if library is not part of current sketch
 // 
 faceDetection doorScan;
+gestureDetection gestScan;
 
 //-------------- Def
 enum State{
   IDLE,
   SCANNING,
   FACE_DETECTED,
-  PLACEHOLDER
+  MOTOR_HANDLER
 };
 
 enum Recognized_Substate{
@@ -15,15 +17,28 @@ enum Recognized_Substate{
   KNOWN_INDIVIDUAL
 };
 
+enum Motor_Substate{
+  LOCKING,
+  UNLOCKING
+}
+
+
 State lockState = IDLE;
 Recognized_Substate userPermission;
+Motor_Substate  motorPhase;
+Motor_Substate lastSubstate = LOCKING;
+
+
 const char* userLabel = "Baqir", *ownerLabel = "Yasin";
+const char* userGestures[2] = {"Peace", "OpenPalm"};
 
 
 void setup(){
   Serial.begin(115200);
   doorScan.cameraInit();
 }
+
+int cameraCheck = 0;
 
 
 void loop(){
@@ -62,22 +77,75 @@ void loop(){
       {
         case OWNER:
           //Gesture recog
-          ei_printf("Owner Substate \r\n");
-          lockState = PLACEHOLDER;
+          ei_printf("Owner Detected, scanning for appropriate gesture \r\n");
+          if (cameraCheck == 0){
+            gestScan.cameraInit();
+            delay(2000);
+            cameraCheck = 1;
+          }
+          gestScan.runImpulse();
+          if (strcmp(gestScan.label, userGestures[0]) == 0){
+            if (lastSubstate != UNLOCKING){
+              lockState = MOTOR_HANDLER;
+              motorPhase = UNLOCKING;
+              cameraCheck = 0;
+            }
+            else{
+              ei_printf("DOOR IS ALREADY UNLOCKED, PLEASE LOCK BEFORE ATTEMPTING TO UNLOCK \r\n");
+            }
+
+          }
+          else if (strcmp(gestScan.label, userGestures[1] == 0)){
+            if (lastSubstate != LOCKING){
+              lockState = MOTOR_HANDLER;
+              motorPhase =  LOCKING;
+              cameraCheck = 0;
+            }
+            else{
+              ei_printf("DOOR IS ALREADY LOCKED, PLEASE UNLOCK BEFORE ATTEMPTING TO LOCK \r\n");
+            }
+          }
+          delay(1000);
           break;
 
         case KNOWN_INDIVIDUAL:
           //Gesture recog
           ei_printf("Special Permission Substate \r\n");
-          lockState = PLACEHOLDER;
+          if (cameraCheck == 0){
+            gestScan.cameraInit();
+            delay(2000);
+            cameraCheck = 1;
+          }
+          gestScan.runImpulse();
+          if (strcmp(gestScan.label, userGestures[0])){
+            lockState = MOTOR_HANDLER;   // Call to Speaker State will go here.
+            cameraCheck = 0;
+          }
+          delay(1000);
           break;
       }
       break;
 
-    case PLACEHOLDER:
-      //PLACEHOLDER FOR MOTOR CONTROL (WE NEED TWO STATES HERE, ONE FOR LOCKING AND ONE FOR UNLOCKING)
-      ei_printf("PLACEHOLDER REACHED, WORKS. CODE NEEDS TO BE RESET. \r\n");
-      delay(2000);
+    case MOTOR_HANDLER:
+      switch(motorPhase)
+      {
+        case UNLOCKING:
+          digitalWrite(IN1_PIN, HIGH);
+          digitalWrite(IN2_PIN, LOW);
+          ledcWrite(EN_PIN, PWM);
+          lockState = SCANNING;
+          lastSubstate =  UNLOCKING;
+          // We will need someway to limit the motor rotation
+          break;
+
+        case LOCKING:
+          digitalWrite(IN2_PIN, HIGH);
+          digitalWrite(IN1_PIN, LOW);
+          ledcWrite(EN_PIN, PWM);
+          lockState = SCANNING;
+          lastSubstate =  LOCKING;
+          break;
+      }
       break;
   }
 }
