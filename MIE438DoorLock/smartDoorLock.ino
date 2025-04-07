@@ -5,7 +5,7 @@ faceDetection doorScan;
 
 //-------------- Def
 
-#define PIN_SPEAKER 13
+#define PIN_SPEAKER 12
 
 int ringMelody[] = {
   NOTE_REST, NOTE_E6, NOTE_REST, NOTE_D6, NOTE_REST, NOTE_CS6, NOTE_REST, NOTE_D6, NOTE_REST, NOTE_E6,
@@ -69,10 +69,11 @@ const char* gestureRec  = "Wave";
 void setup(){
   Serial.begin(115200);
   doorScan.cameraInit();
-  pinMode(IN1_PIN, OUTPUT);
-  pinMode(IN2_PIN, OUTPUT);
-  pinMode(EN_PIN, OUTPUT);
-  ledcAttachChannel(EN_PIN, freq, res, pwmChannel);
+  // pinMode(IN1_PIN, OUTPUT);
+  // pinMode(IN2_PIN, OUTPUT);
+  // pinMode(EN_PIN, OUTPUT);
+  // ledcAttachChannel(EN_PIN, freq, res, pwmChannel);
+  tone(PIN_SPEAKER, NOTE_C4, 1000);
 
 }
 
@@ -97,23 +98,25 @@ void loop(){
       if (strcmp(doorScan.label, userLabel) == 0){
         ei_printf("GUEST WITH SPECIAL PERMISSIONS (%s) IDENTIFIED\r\n", userLabel);
         Serial.printf("Free heap before camera: %d\n", ESP.getFreeHeap());
-        ledcWrite(EN_PIN, PWM);
-        digitalWrite(IN1_PIN, HIGH);
-        tone(PIN_SPEAKER, NOTE_G4, 1000);
-        delay(2000);
-        noTone(PIN_SPEAKER);
+        // ledcWrite(EN_PIN, PWM);
+        // digitalWrite(IN1_PIN, HIGH);
+        tone(PIN_SPEAKER, NOTE_C4, 1000);
+        delay(1000);
+        tone(PIN_SPEAKER, NOTE_C4, 1000);
+        delay(1000);
+        tone(PIN_SPEAKER, NOTE_C4, 1000);
+        delay(1000);
         delay(250);
         lockState =  FACE_DETECTED;
         userPermission  = KNOWN_INDIVIDUAL;
       }
       else if (strcmp(doorScan.label, ownerLabel) == 0){
         ei_printf("OWNER IDENTIFIED (%s) \r\n", ownerLabel);
-        ledcWrite(EN_PIN, PWM);
-        digitalWrite(IN1_PIN, HIGH);
+        // ledcWrite(EN_PIN, PWM);
+        // digitalWrite(IN1_PIN, HIGH);
         Serial.printf("Free heap before camera: %d\n", ESP.getFreeHeap());
-        tone(PIN_SPEAKER, NOTE_A6, 1000);
-        delay(2000);
-        noTone(PIN_SPEAKER);
+        tone(PIN_SPEAKER, NOTE_G6, 3000);
+        delay(3000);
         delay(250);
         lockState = FACE_DETECTED;
         userPermission =  OWNER;
@@ -166,8 +169,8 @@ void loop(){
           doorScan.runImpulse();
           if (strcmp(doorScan.label, gestureRec) == 0){
             ei_printf("WAVE FOUND \r\n");
-            ledcWrite(EN_PIN, PWM);
-            digitalWrite(IN1_PIN, HIGH);
+            // ledcWrite(EN_PIN, PWM);
+            // digitalWrite(IN1_PIN, HIGH);
             playRingMelody();
             delay(5000);
             lockState = SCANNING;
@@ -181,24 +184,32 @@ void loop(){
       switch(motorPhase)
       {
         case UNLOCKING:
-          digitalWrite(IN1_PIN, HIGH);
-          digitalWrite(IN2_PIN, LOW);
-          ledcWrite(EN_PIN, PWM);
+          // digitalWrite(IN1_PIN, HIGH);
+          // digitalWrite(IN2_PIN, LOW);
+          // ledcWrite(EN_PIN, PWM);
+          // delay(5000);
+          // digitalWrite(IN1_PIN, LOW);
+          // digitalWrite(IN2_PIN, LOW);
+          tone(PIN_SPEAKER, NOTE_C4, 5000);
           delay(5000);
-          digitalWrite(IN1_PIN, LOW);
-          digitalWrite(IN2_PIN, LOW);
           lockState = SCANNING;
           lastSubstate =  UNLOCKING;
           // We will need someway to limit the motor rotation
           break;
 
         case LOCKING:
-          digitalWrite(IN2_PIN, HIGH);
-          digitalWrite(IN1_PIN, LOW);
-          ledcWrite(EN_PIN, PWM);
-          delay(5000);
-          digitalWrite(IN1_PIN, LOW);
-          digitalWrite(IN2_PIN, LOW);
+          // digitalWrite(IN2_PIN, HIGH);
+          // digitalWrite(IN1_PIN, LOW);
+          // ledcWrite(EN_PIN, PWM);
+          // delay(5000);
+          // digitalWrite(IN1_PIN, LOW);
+          // digitalWrite(IN2_PIN, LOW);
+          tone(PIN_SPEAKER, NOTE_A6, 3000);
+          delay(3000);
+          tone(PIN_SPEAKER, NOTE_C4, 500);
+          delay(500);
+          tone(PIN_SPEAKER, NOTE_C4, 500);
+          delay(500);
           lockState = SCANNING;
           lastSubstate =  LOCKING;
           break;
